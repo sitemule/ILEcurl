@@ -45,6 +45,19 @@ This will create:
 * `ILEcurl/ILEcurl` binding directory, with the reference to `ILEcurl` service program.
 * `Test` folder with test and examples.
 
+### Develop from a local clone
+
+Edit in a clone on your PC and let `.sitemule/sync_build.sh` copy it to the IBM i and run
+`gmake` there (set `I_HOST` and `DELPOY_PATH` in `.env`). The VS Code tasks use it.
+
+```
+.sitemule/sync_build.sh all                          # service program + release
+.sitemule/sync_build.sh ILEcurl.rpgle DIR=src        # one source file
+.sitemule/sync_build.sh all BIN_LIB=MYLIB            # into another library
+```
+
+Each sync leaves `GIT-MANAGED.md` in the IBM i folder: it is a copy of the repo, so edit here, not there.
+
 ### Using ILEcurl
 the syntax is 
 

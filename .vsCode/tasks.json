@@ -1,102 +1,103 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
+    // Builds run on the IBM i: .sitemule/sync_build.sh rsyncs this folder to DELPOY_PATH
+    // (.env) and runs gmake there. See https://go.microsoft.com/fwlink/?LinkId=733558
+
     "version": "2.0.0",
     "tasks": [
         {
             "label": "Compile current file",
-            "command": "ssh -t MY_IBM_I  'PATH=/QOpenSys/pkgs/bin:$PATH;cd /prj/ILEcurl/;gmake ${fileBasename} DIR=${relativeFileDirname}'",
             "type": "shell",
+            "command": ".sitemule/sync_build.sh \"${fileBasename}\" \"DIR=${relativeFileDirname}\"",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "presentation": {
-                "echo": true,
-                "reveal": "silent",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": {
-                "owner": "c",
-                "fileLocation": [
-                    "relative",
-                    "${workspaceRoot}"
-                ],
-
-                "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):(error|warning|info):(.{7}):(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "code" : 5,
-                    "message": 6
-                }
-            }
-        },{
-            "label": "Build release",
-            "command": "ssh -t MY_IBM_I  'PATH=/QOpenSys/pkgs/bin:$PATH;cd /prj/ILEcurl/;gmake release'",
-            "type": "shell",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "echo": true,
                 "reveal": "always",
-                "focus": true,
-                "panel": "new"
+                "panel": "shared",
+                "clear": true
             },
             "problemMatcher": {
                 "owner": "c",
                 "fileLocation": [
                     "relative",
-                    "${workspaceRoot}"
+                    "${workspaceFolder}"
                 ],
-
                 "pattern": {
                     "regexp": "^(.*):(\\d+):(\\d+):(error|warning|info):(.{7}):(.*)$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
                     "severity": 4,
-                    "code" : 5,
+                    "code": 5,
                     "message": 6
                 }
             }
-        },{
+        },
+        {
             "label": "Build all",
-            "command": "ssh -t MY_IBM_I  'PATH=/QOpenSys/pkgs/bin:$PATH;cd /prj/ILEcurl/;gmake all'",
             "type": "shell",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "command": ".sitemule/sync_build.sh all",
+            "group": "build",
             "presentation": {
-                "echo": true,
                 "reveal": "always",
-                "focus": true,
-                "panel": "new"
+                "panel": "shared",
+                "clear": true
             },
             "problemMatcher": {
                 "owner": "c",
                 "fileLocation": [
                     "relative",
-                    "${workspaceRoot}"
+                    "${workspaceFolder}"
                 ],
-
                 "pattern": {
                     "regexp": "^(.*):(\\d+):(\\d+):(error|warning|info):(.{7}):(.*)$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
                     "severity": 4,
-                    "code" : 5,
+                    "code": 5,
                     "message": 6
                 }
             }
+        },
+        {
+            "label": "Build release",
+            "type": "shell",
+            "command": ".sitemule/sync_build.sh release",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": {
+                "owner": "c",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):(error|warning|info):(.{7}):(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "code": 5,
+                    "message": 6
+                }
+            }
+        },
+        {
+            "label": "Sync only (no build)",
+            "type": "shell",
+            "command": ".sitemule/sync_build.sh sync-only",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": []
         }
-
     ]
 }
