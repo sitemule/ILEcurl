@@ -65,9 +65,9 @@ ILEcurl.srvpgm: ILEcurl.rpgle ILEcurl.bnddir hdr
 	--flags="MODULE(ILEcurl) ALWLIBUPD(*YES) TGTRLS($(TARGET_RELEASE)) DETAIL(*BASIC)"
 
 ILEcurl.bnddir: 
-	-system "DLTBNDDIR  BNDDIR($(BIN_LIB)/$(BIN_LIB))"
-	-system "CRTBNDDIR  BNDDIR($(BIN_LIB)/$(BIN_LIB))"
-	-system "ADDBNDDIRE BNDDIR($(BIN_LIB)/$(BIN_LIB)) OBJ((*LIBL/$(BIN_LIB) *SRVPGM)) POSITION(*FIRST)"
+	-system "DLTBNDDIR  BNDDIR($(BIN_LIB)/ILECURL)"
+	-system "CRTBNDDIR  BNDDIR($(BIN_LIB)/ILECURL)"
+	-system "ADDBNDDIRE BNDDIR($(BIN_LIB)/ILECURL) OBJ((*LIBL/ILECURL *SRVPGM)) POSITION(*FIRST)"
 
 %.rpgle:
 	compile.py --stmf="$(STMF)" --lib="$(BIN_LIB)" --liblist="$(LIBLIST)" --flags="$(RPGFLAGS)" --include="$(RPGINCLUDE)"
