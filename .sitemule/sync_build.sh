@@ -126,17 +126,21 @@ REMOTE_SCRIPT
     # (--pid: it prints what is left, then stops). -F: the log appears when the job starts -
     # until then it waits in the queue behind the others.
     echo ">>> Waiting for the job (queued behind others on $BUILD_JOBQ, then running) - its output follows"
-    ssh "$I_HOST" "PATH=/QOpenSys/pkgs/bin:\$PATH
-        ( waited=0
-          while [ ! -f $REMOTE.rc ] && [ \$waited -lt ${BUILD_WAIT:-3600} ]; do sleep 2; waited=\$((waited + 2)); done ) &
-        waiter=\$!
-        tail -n +1 -F --pid=\$waiter $REMOTE.log 2>/dev/null
-        wait \$waiter
-        if [ ! -f $REMOTE.rc ]; then
-            echo '>>> No result after ${BUILD_WAIT:-3600}s - the job may still be queued or have ended abnormally (WRKSBMJOB, $REMOTE.log)'
-            exit 1
-        fi
-        rc=\$(cat $REMOTE.rc); rm -f $REMOTE.sh $REMOTE.log $REMOTE.rc; exit \$rc"
+    # Sent to sh on stdin, not as the ssh command: that runs in the user's login shell, which
+    # may be bsh (no $((...)) or $(...)).
+    ssh "$I_HOST" /QOpenSys/usr/bin/sh <<WAIT_SCRIPT
+PATH=/QOpenSys/pkgs/bin:\$PATH
+( waited=0
+  while [ ! -f $REMOTE.rc ] && [ \$waited -lt ${BUILD_WAIT:-3600} ]; do sleep 2; waited=\$((waited + 2)); done ) &
+waiter=\$!
+tail -n +1 -F --pid=\$waiter $REMOTE.log 2>/dev/null
+wait \$waiter
+if [ ! -f $REMOTE.rc ]; then
+    echo '>>> No result after ${BUILD_WAIT:-3600}s - the job may still be queued or have ended abnormally (WRKSBMJOB, $REMOTE.log)'
+    exit 1
+fi
+rc=\$(cat $REMOTE.rc); rm -f $REMOTE.sh $REMOTE.log $REMOTE.rc; exit \$rc
+WAIT_SCRIPT
     exit $?
 fi
 
