@@ -31,8 +31,6 @@ if [ -f ".env" ]; then
 fi
 
 : "${I_HOST:?I_HOST is not set. Add it to .env or export it before running.}"
-# DELPOY_PATH: the old misspelling, still read so existing .env files keep working
-DEPLOY_PATH="${DEPLOY_PATH:-$DELPOY_PATH}"
 : "${DEPLOY_PATH:?DEPLOY_PATH is not set. Add it to .env or export it before running.}"
 
 MAKE_TARGET="${1:-all}"
@@ -84,6 +82,7 @@ else
         --exclude '.gitattributes' \
         --exclude '.vscode/' \
         --exclude '.DS_Store' \
+        --exclude 'node_modules/' \
         --exclude '.claude/' \
         --exclude '.github/' \
         --exclude 'error.txt' \
@@ -103,6 +102,42 @@ fi
 if [ "$MAKE_TARGET" = "sync-only" ]; then
     echo ">>> Sync complete (no build requested)."
     exit 0
+fi
+
+# BUILD_JOBQ (optional, .env): run gmake as a batch job on this job queue instead of in the ssh
+# session - e.g. QBATCH, one job at a time - so builds and deploys (RUNSQLSTM jobs on the same
+# queue) on the box run one after the other instead of over each other. Waits for the job and
+# shows its output while it runs. Without it gmake runs in the ssh session, as before.
+if [ -n "$BUILD_JOBQ" ]; then
+    REMOTE="/tmp/sync_build-$(date +%Y%m%d%H%M%S)-$$"
+    echo ">>> Submitting to job queue $BUILD_JOBQ: gmake $MAKE_TARGET$MAKE_VARS in $BUILD_DIR"
+    ssh "$I_HOST" "cat > $REMOTE.sh" <<REMOTE_SCRIPT
+PATH=/QOpenSys/pkgs/bin:\$PATH
+cd '$BUILD_DIR' || { echo 1 > $REMOTE.rc; exit 1; }
+rm -f error.txt
+gmake $MAKE_TARGET$MAKE_VARS > $REMOTE.log 2>&1
+rc=\$?
+[ -s error.txt ] && cat error.txt >> $REMOTE.log
+echo \$rc > $REMOTE.rc
+REMOTE_SCRIPT
+    ssh "$I_HOST" "system \"SBMJOB CMD(QSH CMD('/QOpenSys/usr/bin/sh $REMOTE.sh')) JOB(GMAKE) JOBQ($BUILD_JOBQ)\"" || exit 1
+    # Show the job's output while it runs: a waiter ends when the job has written its return
+    # code (or after BUILD_WAIT seconds), and GNU tail follows the log until the waiter is gone
+    # (--pid: it prints what is left, then stops). -F: the log appears when the job starts -
+    # until then it waits in the queue behind the others.
+    echo ">>> Waiting for the job (queued behind others on $BUILD_JOBQ, then running) - its output follows"
+    ssh "$I_HOST" "PATH=/QOpenSys/pkgs/bin:\$PATH
+        ( waited=0
+          while [ ! -f $REMOTE.rc ] && [ \$waited -lt ${BUILD_WAIT:-3600} ]; do sleep 2; waited=\$((waited + 2)); done ) &
+        waiter=\$!
+        tail -n +1 -F --pid=\$waiter $REMOTE.log 2>/dev/null
+        wait \$waiter
+        if [ ! -f $REMOTE.rc ]; then
+            echo '>>> No result after ${BUILD_WAIT:-3600}s - the job may still be queued or have ended abnormally (WRKSBMJOB, $REMOTE.log)'
+            exit 1
+        fi
+        rc=\$(cat $REMOTE.rc); rm -f $REMOTE.sh $REMOTE.log $REMOTE.rc; exit \$rc"
+    exit $?
 fi
 
 echo ">>> Building in $BUILD_DIR: gmake $MAKE_TARGET$MAKE_VARS"
